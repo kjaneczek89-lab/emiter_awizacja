@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMITER - System Awizacji</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+    .hidden-view { display: none !important; }
+    .glass-panel { background: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .uppercase-input { text-transform: uppercase; }
+  </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col">
+
+  <!-- PASEK NAWIGACYJNY -->
+  <nav id="navbar" class="bg-blue-800 text-white p-4 shadow-md hidden-view flex flex-col md:flex-row justify-between items-center z-10 gap-4">
+    <div class="text-xl font-bold tracking-wide flex items-center gap-2">
+      <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+      EMITER <span class="font-normal text-blue-200 text-lg">Awizacje</span>
+    </div>
+    <div id="nav-tabs" class="hidden-view flex flex-wrap gap-2 md:gap-6 bg-blue-900 px-4 py-1.5 rounded-full text-sm font-medium">
+      <button onclick="przelaczWidok('awizacja-view')" class="text-white hover:text-blue-300 transition">Nowe Zgłoszenie</button>
+      <button onclick="przelaczWidok('lista-view')" id="btn-harmonogram-tab" class="text-white hover:text-blue-300 transition">Harmonogram</button>
+      <button onclick="przelaczWidok('admin-view')" id="btn-admin-tab" class="hidden-view text-yellow-400 hover:text-yellow-300 transition">Panel Admina</button>
+    </div>
+    <div class="flex items-center gap-4">
+      <span id="nav-user-info" class="text-sm font-medium hidden md:block"></span>
+      <button onclick="wyloguj()" class="text-sm bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded-md transition font-semibold">Wyloguj</button>
+    </div>
+  </nav>
+
+  <main class="flex-grow flex items-center justify-center p-4 w-full">
+    
+    <!-- WIDOK 1 & 1B & 2: (LOGOWANIE, HASŁO, ADMIN) -->
+    <!-- POZOSTAWIONY BEZ ZMIAN Względem poprzedniego, dla oszczędności miejsca ukryty w komentarzu. Skopiuj swoje widoki 1, 1B i 2 z poprzedniej wersji i wklej je tutaj -->
+    <div id="login-view" class="glass-panel w-full max-w-md p-8"><div class="text-center mb-8"><h1 class="text-4xl font-bold text-blue-800">EMITER</h1><p class="text-gray-500 mt-2">Logowanie do awizacji</p></div><div class="space-y-5"><div><label class="block text-sm font-semibold text-gray-700 mb-1">Login</label><input type="text" id="loginInput" class="block w-full px-4 py-3 border border-gray-300 rounded-lg outline-none bg-gray-50"></div><div><label class="block text-sm font-semibold text-gray-700 mb-1">Hasło</label><input type="password" id="hasloInput" class="block w-full px-4 py-3 border border-gray-300 rounded-lg outline-none bg-gray-50"></div><button onclick="zrobLogowanie()" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-lg mt-2 shadow-md">Zaloguj się</button><div id="login-error" class="text-red-500 text-sm text-center mt-3 hidden-view bg-red-50 py-2 rounded"></div></div></div>
+    <div id="change-password-view" class="glass-panel w-full max-w-md p-8 hidden-view"><div class="text-center mb-6"><h2 class="text-2xl font-bold text-gray-800">Pierwsze logowanie</h2><p class="text-sm text-gray-500 mt-2">Zmień tymczasowe hasło na własne.</p></div><div class="space-y-4"><div><label class="block text-sm font-semibold text-gray-700 mb-1">Nowe hasło</label><input type="password" id="newPass1" class="block w-full px-4 py-3 border border-gray-300 rounded-lg outline-none bg-gray-50"></div><div><label class="block text-sm font-semibold text-gray-700 mb-1">Powtórz nowe hasło</label><input type="password" id="newPass2" class="block w-full px-4 py-3 border border-gray-300 rounded-lg outline-none bg-gray-50"></div><button onclick="zapiszNoweHaslo()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-lg mt-4 shadow-md">Ustaw hasło</button><div id="change-pass-error" class="text-red-500 text-sm text-center mt-3 hidden-view bg-red-50 py-2 rounded"></div></div></div>
+    <div id="admin-view" class="glass-panel w-full max-w-2xl p-8 hidden-view"><h2 class="text-2xl font-bold text-gray-800 mb-2">Zarządzanie kontami</h2><p class="mb-6 text-gray-500 text-sm border-b pb-4">Dodaj nowego użytkownika.</p><div class="grid grid-cols-1 md:grid-cols-2 gap-5"><div><label class="block text-sm font-medium text-gray-700 mb-1">Login</label><input type="text" id="newLogin" class="w-full px-4 py-2 border rounded-md"></div><div><label class="block text-sm font-medium text-gray-700 mb-1">Tymczasowe Hasło</label><input type="password" id="newPassword" class="w-full px-4 py-2 border rounded-md"></div><div><label class="block text-sm font-medium text-gray-700 mb-1">Imię i Nazwisko</label><input type="text" id="newName" class="w-full px-4 py-2 border rounded-md"></div><div><label class="block text-sm font-medium text-gray-700 mb-1">Firma (Dostawca)</label><input type="text" id="newCompany" class="w-full px-4 py-2 border rounded-md"></div><div class="md:col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">Poziom dostępu (Rola)</label><select id="newRole" class="w-full px-4 py-2 border rounded-md"><option value="User">Użytkownik</option><option value="Admin">Administrator</option></select></div></div><button onclick="stworzKonto()" class="mt-8 w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-lg">Zarejestruj konto</button></div>
+
+    <!-- WIDOK 3: NOWA AWIZACJA Z KIERUNKIEM -->
+    <div id="awizacja-view" class="glass-panel w-full max-w-3xl p-6 md:p-8 hidden-view">
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Nowa Awizacja Transportu</h2>
+      <p class="mb-6 text-gray-500 text-sm border-b pb-4">Zgłoś transport przyjeżdżający do firmy, lub odbiór towaru.</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Typ Transportu (Kierunek)</label>
+          <select id="awizKierunek" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-medium">
+            <option value="Dostawa do Emiter">Dostawa do Emiter</option>
+            <option value="Dostawa do Kelvion">Dostawa do Kelvion</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Kontrahent (Dostawca / Odbiorca)</label>
+          <!-- Admin może to pole edytować, User ma na stałe zablokowane ze swoją firmą -->
+          <input type="text" id="awizKontrahent" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 font-bold text-blue-900">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Planowana data i godzina</label>
+          <input type="datetime-local" id="awizData" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Firma Przewozowa / Kurier</label>
+          <input type="text" id="awizPrzewoznik" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Nr Rejestracyjny (bez spacji)</label>
+          <input type="text" id="awizRejestracja" placeholder="np. KNS1234" class="uppercase-input w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold text-gray-700">Wykaz towarów</h3>
+          <button onclick="dodajWierszTowaru()" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-md text-sm font-bold hover:bg-blue-200 transition">
+            + Dodaj pozycję
+          </button>
+        </div>
+        
+        <div id="towary-container" class="space-y-3">
+          <div class="flex flex-col md:flex-row gap-2 towar-row bg-gray-50 p-2 rounded border border-gray-200 items-center">
+            <input type="text" placeholder="Opis / Nazwa towaru" class="flex-grow px-3 py-2 border border-gray-300 rounded-md outline-none towar-nazwa w-full">
+            <div class="flex w-full md:w-1/3 gap-2">
+              <input type="number" min="1" placeholder="Ilość" class="w-2/3 px-3 py-2 border border-gray-300 rounded-md outline-none towar-ilosc">
+              <select class="w-1/3 px-2 py-2 border border-gray-300 rounded-md bg-white towar-jednostka">
+                <option>palety</option><option>szt.</option><option>kg</option>
+              </select>
+            </div>
+            <button onclick="usunWiersz(this)" class="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-md transition" title="Usuń wiersz">X</button>
+          </div>
+        </div>
+      </div>
+      <button onclick="wyslijAwizacje()" id="btn-wyslij" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 px-4 rounded-lg shadow-lg">
+        Zarejestruj awizację
+      </button>
+    </div>
+
+    <!-- WIDOK 4: HARMONOGRAM -->
+    <div id="lista-view" class="glass-panel w-full max-w-5xl p-6 md:p-8 hidden-view flex flex-col">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
+        <div>
+          <h2 id="naglowek-harmonogramu" class="text-2xl font-bold text-gray-800">Harmonogram Przyjazdów</h2>
+          <p id="opis-harmonogramu" class="text-gray-500 text-sm mt-1">Podgląd zadeklarowanych transportów.</p>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-md border border-gray-200">
+             <label for="dateFilter" class="text-sm font-semibold text-gray-600">Filtruj datę:</label>
+             <input type="date" id="dateFilter" onchange="filtrujTabele()" class="bg-transparent text-sm outline-none text-gray-700">
+             <button onclick="wyczyscFiltry()" class="text-xs text-red-500 underline hidden ml-2" id="btnClearFilter">Wyczyść</button>
+          </div>
+          <button onclick="ladujAwizacje()" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-md transition border border-blue-200">Odśwież</button>
+          <button onclick="generujPDF()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-md transition shadow-sm">PDF</button>
+        </div>
+      </div>
+      
+      <div id="obszar-do-pdf" class="overflow-x-auto bg-white p-2">
+         <div id="pdf-header" class="hidden text-center mb-6 border-b pb-4">
+             <h1 class="text-3xl font-bold text-gray-800">EMITER - Harmonogram</h1>
+             <p class="text-gray-500" id="pdf-date-subtitle">Zestawienie awizacji</p>
+         </div>
+         <div id="tabela-awizacji-container">
+           <div class="text-center py-10 text-gray-500">Pobieranie danych...</div>
+         </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let tempUser = null;
+    let pelneDaneAwizacji = []; 
+
+    window.onload = function() {
+      const savedUser = localStorage.getItem('emiterUser');
+      if (savedUser) pokazInterfejs(JSON.parse(savedUser));
+    };
+
+    function pokazInterfejs(user) {
+      try {
+        document.getElementById('login-view').classList.add('hidden-view');
+        document.getElementById('change-password-view').classList.add('hidden-view');
+        document.getElementById('navbar').classList.remove('hidden-view');
+        document.getElementById('nav-tabs').classList.remove('hidden-view');
+        document.getElementById('nav-user-info').innerText = `${user.imieNazwisko} (${user.firma || ''})`;
+        
+        // ZAWSZE ukrywaj przycisk admina na starcie - pokaże się później, tylko jeśli to Admin
+        document.getElementById('btn-admin-tab').classList.add('hidden-view'); 
+
+        przelaczWidok('awizacja-view');
+        
+        // --- LOGIKA OBSŁUGI ZGŁASZAJĄCEGO ---
+        const inputKontrahent = document.getElementById('awizKontrahent');
+        const nazwaFirmy = (user.firma || '').toLowerCase();
+        const czyToEmiter = (user.rola === 'Admin' || nazwaFirmy.includes('emiter'));
+
+        if (czyToEmiter) {
+          // PRACOWNIK EMITERA
+          document.getElementById('btn-harmonogram-tab').innerText = "Harmonogram";
+          document.getElementById('naglowek-harmonogramu').innerText = "Harmonogram Logistyki";
+          document.getElementById('opis-harmonogramu').innerText = "Zestawienie przyjazdów i wyjazdów z firmy Emiter.";
+          
+          if(inputKontrahent) {
+             inputKontrahent.disabled = false;
+             inputKontrahent.value = ''; // Dla Emitera pole zostaje puste, by wpisali kogo chcą
+             inputKontrahent.placeholder = 'Wpisz firmę (np. Kelvion)';
+             inputKontrahent.classList.remove('bg-gray-100', 'cursor-not-allowed');
+          }
+          
+          if (user.rola === 'Admin') {
+            document.getElementById('btn-admin-tab').classList.remove('hidden-view');
+          }
+        } else {
+          // KONTRAHENT (np. Kelvion)
+          // Ponieważ udostępniłeś pełny harmonogram dla wszystkich, ustawiamy standardowe nagłówki
+          document.getElementById('btn-harmonogram-tab').innerText = "Harmonogram";
+          document.getElementById('naglowek-harmonogramu').innerText = "Harmonogram Logistyki";
+          document.getElementById('opis-harmonogramu').innerText = "Zestawienie przyjazdów i wyjazdów z firmy Emiter.";
+          
+          if(inputKontrahent) {
+             inputKontrahent.disabled = false; // ZMIANA: Pole jest teraz aktywne!
+             inputKontrahent.value = user.firma; // ZMIANA: Automatycznie wpisuje nazwę firmy użytkownika (np. Kelvion)
+             inputKontrahent.classList.remove('bg-gray-100', 'cursor-not-allowed'); // ZMIANA: Znika szare tło blokady
+          }
+        }
+      } catch (error) { console.error(error); }
+    }
+
+    // Funkcje podstawowe
+    function wyloguj() {
+      try {
+        // 1. Czyszczenie pamięci
+        localStorage.removeItem('emiterUser');
+        tempUser = null;
+        
+        // 2. Ukrywanie wszystkich paneli roboczych
+        const ukrywaneElementy = ['navbar', 'nav-tabs', 'btn-admin-tab', 'admin-view', 'awizacja-view', 'lista-view', 'change-password-view'];
+        ukrywaneElementy.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.add('hidden-view');
+        });
+        
+        // 3. Czyszczenie formularza logowania
+        document.getElementById('loginInput').value = '';
+        document.getElementById('hasloInput').value = '';
+        const errorDiv = document.getElementById('login-error');
+        if (errorDiv) errorDiv.classList.add('hidden-view');
+        
+        // 4. Przywrócenie widoku logowania
+        document.getElementById('login-view').classList.remove('hidden-view');
+        
+      } catch (error) {
+        console.error("Błąd podczas wylogowywania:", error);
+      }
+    }
+    function przelaczWidok(idWidoku) {
+      document.getElementById('admin-view').classList.add('hidden-view');
+      document.getElementById('awizacja-view').classList.add('hidden-view');
+      document.getElementById('lista-view').classList.add('hidden-view');
+      document.getElementById(idWidoku).classList.remove('hidden-view');
+      if(idWidoku === 'lista-view') ladujAwizacje();
+    }
+    function zrobLogowanie() {
+      const login = document.getElementById('loginInput').value;
+      const haslo = document.getElementById('hasloInput').value;
+      if(!login || !haslo) return;
+      google.script.run.withSuccessHandler(response => {
+        if (response.success) {
+          if (response.user.wymagaZmiany) {
+            tempUser = response.user;
+            document.getElementById('login-view').classList.add('hidden-view');
+            document.getElementById('change-password-view').classList.remove('hidden-view');
+          } else {
+            localStorage.setItem('emiterUser', JSON.stringify(response.user));
+            pokazInterfejs(response.user);
+          }
+        } else alert(response.message);
+      }).verifyLogin(login, haslo);
+    }
+    function zapiszNoweHaslo() {
+      const p1 = document.getElementById('newPass1').value;
+      const p2 = document.getElementById('newPass2').value;
+      if (p1 !== p2) return alert("Hasła się nie zgadzają.");
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) {
+          tempUser.wymagaZmiany = false;
+          localStorage.setItem('emiterUser', JSON.stringify(tempUser));
+          pokazInterfejs(tempUser);
+        }
+      }).changePassword(tempUser.id, p1);
+    }
+    function stworzKonto() {
+      google.script.run.withSuccessHandler(res => alert(res.message))
+        .createAccount(document.getElementById('newLogin').value, document.getElementById('newPassword').value, document.getElementById('newName').value, document.getElementById('newCompany').value, document.getElementById('newRole').value);
+    }
+
+    // Dynamiczne formularze
+    function dodajWierszTowaru() {
+      const html = `<div class="flex flex-col md:flex-row gap-2 towar-row bg-gray-50 p-2 rounded border border-gray-200 items-center"><input type="text" placeholder="Opis / Nazwa towaru" class="flex-grow px-3 py-2 border border-gray-300 rounded-md outline-none towar-nazwa w-full"><div class="flex w-full md:w-1/3 gap-2"><input type="number" min="1" placeholder="Ilość" class="w-2/3 px-3 py-2 border border-gray-300 rounded-md outline-none towar-ilosc"><select class="w-1/3 px-2 py-2 border border-gray-300 rounded-md bg-white towar-jednostka"><option>palety</option><option>szt.</option><option>kg</option></select></div><button onclick="usunWiersz(this)" class="bg-red-50 text-red-500 hover:bg-red-100 p-2 rounded-md transition w-full md:w-auto">X</button></div>`;
+      document.getElementById('towary-container').insertAdjacentHTML('beforeend', html);
+    }
+    function usunWiersz(btn) {
+      if (document.querySelectorAll('.towar-row').length > 1) btn.closest('.towar-row').remove();
+    }
+
+    function wyslijAwizacje() {
+      const user = JSON.parse(localStorage.getItem('emiterUser'));
+      
+      const awizacjaData = {
+        userId: user.id,
+        firmaZglaszajaca: user.firma,
+        kierunek: document.getElementById('awizKierunek').value, // NOWE
+        kontrahent: document.getElementById('awizKontrahent').value, // NOWE
+        dataPrzyjazdu: document.getElementById('awizData').value,
+        rejestracja: document.getElementById('awizRejestracja').value.replace(/\s/g, '').toUpperCase(),
+        przewoznik: document.getElementById('awizPrzewoznik').value
+      };
+
+      const towaryList = [];
+      let blad = false;
+      document.querySelectorAll('.towar-row').forEach(w => {
+        const nazwa = w.querySelector('.towar-nazwa').value;
+        const ilosc = w.querySelector('.towar-ilosc').value;
+        if(!nazwa || !ilosc) blad = true;
+        towaryList.push({ nazwa, ilosc, jednostka: w.querySelector('.towar-jednostka').value });
+      });
+
+      if (!awizacjaData.dataPrzyjazdu || !awizacjaData.rejestracja || !awizacjaData.kontrahent || blad) {
+        return alert("Proszę uzupełnić wszystkie pola awizacji (Data, Kontrahent, Rejestracja, Towary)!");
+      }
+
+      const btn = document.getElementById('btn-wyslij');
+      btn.innerHTML = "Zapisywanie..."; btn.disabled = true;
+
+      google.script.run.withSuccessHandler(res => {
+        btn.innerHTML = "Zarejestruj awizację"; btn.disabled = false;
+        alert(res.message);
+        if(res.success) przelaczWidok('lista-view'); // Automatycznie przełącz na listę po dodaniu!
+      }).zapiszDaneAwizacji(awizacjaData, towaryList);
+    }
+
+    // Tabela
+    function ladujAwizacje() {
+      const user = JSON.parse(localStorage.getItem('emiterUser'));
+      // Wysłanie także user.firma, aby backend mógł dopasować kontrahenta
+      google.script.run.withSuccessHandler(d => {
+         pelneDaneAwizacji = d;
+         filtrujTabele();
+      }).pobierzAwizacje(user.rola, user.id, user.firma);
+    }
+    
+    function wyczyscFiltry() { document.getElementById('dateFilter').value = ''; filtrujTabele(); }
+    function filtrujTabele() {
+       const d = document.getElementById('dateFilter').value;
+       const btnClear = document.getElementById('btnClearFilter');
+       let filtr = pelneDaneAwizacji;
+       if (d) {
+           btnClear.classList.remove('hidden');
+           filtr = pelneDaneAwizacji.filter(a => {
+               const dt = new Date(a.data);
+               if (isNaN(dt.getTime())) return String(a.data).substring(0, 10) === d;
+               return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}` === d;
+           });
+       } else btnClear.classList.add('hidden');
+       renderujAwizacje(filtr);
+    }
+
+    function renderujAwizacje(awizacje) {
+       const container = document.getElementById('tabela-awizacji-container');
+       if(!awizacje || awizacje.length === 0) return container.innerHTML = '<div class="text-center py-10">Brak zaplanowanych transportów.</div>';
+       
+       let html = `<table class="w-full text-left border-collapse min-w-[700px] mb-4"><thead><tr class="bg-gray-100 text-gray-600 text-xs uppercase border-b"><th class="p-4">Data i Godzina</th><th class="p-4">Kierunek</th><th class="p-4">Kontrahent / Przewoźnik</th><th class="p-4">Pojazd</th><th class="p-4">Zadeklarowane Towary</th></tr></thead><tbody class="text-sm divide-y divide-gray-100">`;
+       
+       awizacje.forEach(a => {
+          const dt = new Date(a.data);
+          const dataStr = isNaN(dt.getTime()) ? String(a.data) : dt.toLocaleString('pl-PL', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+          
+          // ZNACZNIK KIERUNKU
+          let badgeKierunek = a.kierunek.includes("Kelvion") 
+             ? `<span class="bg-purple-100 text-purple-800 font-bold px-2 py-1 rounded border border-purple-200">DOSTAWA DO KELVION</span>`
+             : `<span class="bg-blue-100 text-blue-800 font-bold px-2 py-1 rounded border border-blue-200">DOSTAWA DO EMITER</span>`;
+
+          let towary = a.towary.map(t => `<div class="whitespace-nowrap font-medium text-gray-700">• ${t.nazwa} <span class="text-gray-400 font-normal">(${t.ilosc} ${t.jednostka})</span></div>`).join('');
+          
+          html += `<tr class="hover:bg-blue-50/50 bg-white">
+            <td class="p-4 font-semibold text-gray-800">${dataStr}</td>
+            <td class="p-4">${badgeKierunek}</td>
+            <td class="p-4"><div class="font-bold text-gray-800">${a.kontrahent}</div><div class="text-xs text-gray-500 mt-1 uppercase">Prz: ${a.przewoznik}</div></td>
+            <td class="p-4"><span class="font-mono font-bold text-slate-700 border bg-white rounded px-2 py-1">${a.rejestracja}</span></td>
+            <td class="p-4 text-xs">${towary}</td>
+          </tr>`;
+       });
+       container.innerHTML = html + `</tbody></table>`;
+    }
+    
+    function generujPDF() {
+       const el = document.getElementById('obszar-do-pdf');
+       const hdr = document.getElementById('pdf-header');
+       hdr.classList.remove('hidden');
+       html2pdf().set({ margin: 0.5, filename: `Harmonogram.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } }).from(el).save().then(() => hdr.classList.add('hidden'));
+    }
+  </script>
+</body>
+</html>
